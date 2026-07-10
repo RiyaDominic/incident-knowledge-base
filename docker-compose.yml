@@ -1,0 +1,35 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: incident-kb-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: incident_kb
+    volumes:
+      - mongodb_data:/data/db
+
+  app:
+    build: .
+    container_name: incident-kb-app
+    depends_on:
+      - mongodb
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/incident_kb
+      JWT_SECRET: ${JWT_SECRET:-replace-this-with-a-strong-secret-at-runtime}
+      JWT_ACCESS_TOKEN_TTL: PT15M
+      JWT_REFRESH_TOKEN_TTL: P7D
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:-true}
+    command: ["java", "-jar", "/app/app.jar"]
+
+volumes:
+  mongodb_data:

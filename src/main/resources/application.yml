@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: incident-knowledge-base-root-cause-analyzer
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/incident_kb}
+      auto-index-creation: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:replace-this-with-a-long-random-secret-32-bytes-min}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:P7D}
+  cors:
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:8080}
+  bootstrap:
+    admin:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+      name: ${BOOTSTRAP_ADMIN_NAME:}
+      email: ${BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.incidentanalyzer: INFO
+    org.springframework.security: WARN

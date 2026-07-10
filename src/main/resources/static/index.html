@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Incident Knowledge Base & Root Cause Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<header class="topbar border-bottom border-secondary-subtle">
+    <div>
+        <div class="eyebrow">Operational Intelligence</div>
+        <h1>Incident Knowledge Base &amp; Root Cause Analyzer</h1>
+        <p class="text-muted mb-0">Track incidents, document root causes, and reuse solutions before engineers re-discover them.</p>
+    </div>
+    <div class="topbar-actions">
+        <button class="btn btn-primary d-none" id="reportIncidentBtn" data-bs-toggle="modal" data-bs-target="#incidentModal">Report Incident</button>
+        <button class="btn btn-outline-light d-none" id="refreshDashboardBtn">Refresh</button>
+        <button class="btn btn-ghost d-none" id="logoutBtn">Logout</button>
+    </div>
+</header>
+
+<main class="container-fluid py-4">
+    <section id="authSection" class="auth-grid">
+        <div class="panel panel-accent auth-copy">
+            <div class="eyebrow">Secure access</div>
+            <h2>Centralize every outage in one place.</h2>
+            <p>Capture logs, severity, urgency, root cause, and resolution history. Search by the exact error or the application that failed.</p>
+            <ul class="feature-list">
+                <li>JWT access and refresh tokens</li>
+                <li>Role-gated admin operations</li>
+                <li>Incident search powered by MongoDB text indexes</li>
+                <li>Async email notifications for critical events</li>
+            </ul>
+        </div>
+        <div class="panel auth-panel">
+            <ul class="nav nav-tabs mb-3" id="authTabs" role="tablist">
+                <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#loginPane" type="button">Login</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#registerPane" type="button">Register</button></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="loginPane">
+                    <div class="stack-gap">
+                        <input id="loginEmail" class="form-control form-control-lg" placeholder="Email" type="email">
+                        <input id="loginPassword" class="form-control form-control-lg" placeholder="Password" type="password">
+                        <button class="btn btn-primary btn-lg w-100" id="loginBtn">Sign in</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="registerPane">
+                    <div class="stack-gap">
+                        <input id="registerName" class="form-control form-control-lg" placeholder="Name" type="text">
+                        <input id="registerEmail" class="form-control form-control-lg" placeholder="Email" type="email">
+                        <input id="registerPassword" class="form-control form-control-lg" placeholder="Password" type="password">
+                        <input id="registerRole" type="hidden" value="ENGINEER">
+                        <div class="text-secondary small">Public registration creates an ENGINEER account.</div>
+                        <button class="btn btn-outline-light btn-lg w-100" id="registerBtn">Create account</button>
+                    </div>
+                </div>
+            </div>
+            <div id="authStatus" class="status-banner mt-3"></div>
+        </div>
+    </section>
+
+    <section id="appSection" class="d-none">
+        <div class="stats-grid mb-4">
+            <div class="stat-card"><span>Total</span><strong id="totalCount">0</strong></div>
+            <div class="stat-card stat-card-open"><span>Open</span><strong id="openCount">0</strong></div>
+            <div class="stat-card stat-card-resolved"><span>Resolved</span><strong id="resolvedCount">0</strong></div>
+            <div class="stat-card stat-card-critical"><span>Critical</span><strong id="criticalCount">0</strong></div>
+        </div>
+
+        <div class="panel mb-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label text-uppercase text-secondary small">Search</label>
+                    <input id="queryInput" class="form-control form-control-lg" placeholder="Error, root cause, tag, or app">
+                </div>
+                <div class="col-lg-2"><label class="form-label text-uppercase text-secondary small">Application</label><input id="applicationFilter" class="form-control form-control-lg" placeholder="Payments"></div>
+                <div class="col-lg-2"><label class="form-label text-uppercase text-secondary small">Severity</label><select id="severityFilter" class="form-select form-select-lg"><option value="">Any</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select></div>
+                <div class="col-lg-2"><label class="form-label text-uppercase text-secondary small">Status</label><select id="statusFilter" class="form-select form-select-lg"><option value="">Any</option><option>OPEN</option><option>INVESTIGATING</option><option>RESOLVED</option></select></div>
+                <div class="col-lg-2"><button class="btn btn-primary btn-lg w-100" id="searchBtn">Search</button></div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6"><div class="panel"><h3>Incidents by severity</h3><canvas id="severityChart" height="180"></canvas></div></div>
+            <div class="col-lg-6"><div class="panel"><h3>Applications failing most</h3><canvas id="applicationChart" height="180"></canvas></div></div>
+        </div>
+
+        <div class="panel mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Incident registry</h3>
+                <span class="text-secondary small">Click a row for details</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Application</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="incidentTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="panel h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mb-0">Incident detail</h3>
+                        <button class="btn btn-outline-light btn-sm" id="copyIncidentJsonBtn">Copy JSON</button>
+                    </div>
+                    <div id="incidentDetail" class="detail-empty">Select an incident to inspect logs, root cause, and resolution notes.</div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="panel mb-4">
+                    <h3>Comment thread</h3>
+                    <div id="commentThread" class="thread"></div>
+                    <textarea id="commentMessage" class="form-control mt-3" rows="3" placeholder="Add a collaborative note..."></textarea>
+                    <button class="btn btn-primary mt-3" id="commentBtn">Post comment</button>
+                </div>
+                <div class="panel">
+                    <h3>Raw log content</h3>
+                    <pre id="logContent" class="log-view">Select an incident to load logs.</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Report Incident Modal -->
+<div class="modal fade" id="incidentModal" tabindex="-1" aria-labelledby="incidentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="incidentModalLabel">Report New Incident</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="incidentForm">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="modalTitle" class="form-label">Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control bg-secondary text-light border-secondary" id="modalTitle" required>
+            </div>
+            <div class="col-md-6">
+              <label for="modalApp" class="form-label">Application Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control bg-secondary text-light border-secondary" id="modalApp" required>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label for="modalEnv" class="form-label">Environment <span class="text-danger">*</span></label>
+              <select class="form-select bg-secondary text-light border-secondary" id="modalEnv" required>
+                <option value="production">production</option>
+                <option value="staging">staging</option>
+                <option value="development">development</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="modalSeverity" class="form-label">Severity <span class="text-danger">*</span></label>
+              <select class="form-select bg-secondary text-light border-secondary" id="modalSeverity" required>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="CRITICAL">CRITICAL</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="modalPriority" class="form-label">Priority <span class="text-danger">*</span></label>
+              <select class="form-select bg-secondary text-light border-secondary" id="modalPriority" required>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="URGENT">URGENT</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label for="modalStatus" class="form-label">Status <span class="text-danger">*</span></label>
+              <select class="form-select bg-secondary text-light border-secondary" id="modalStatus" required>
+                <option value="OPEN">OPEN</option>
+                <option value="INVESTIGATING">INVESTIGATING</option>
+                <option value="RESOLVED">RESOLVED</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="modalTags" class="form-label">Tags (comma-separated)</label>
+              <input type="text" class="form-control bg-secondary text-light border-secondary" id="modalTags" placeholder="e.g. redis,cache,failover">
+            </div>
+            <div class="col-md-4">
+              <label for="modalServices" class="form-label">Affected Services (comma-separated)</label>
+              <input type="text" class="form-control bg-secondary text-light border-secondary" id="modalServices" placeholder="e.g. UserAPI,AuthService">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="modalError" class="form-label">Error Message <span class="text-danger">*</span></label>
+            <textarea class="form-control bg-secondary text-light border-secondary" id="modalError" rows="2" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="modalLogs" class="form-label">Raw Logs / Stack Trace</label>
+            <textarea class="form-control bg-secondary text-light border-secondary" id="modalLogs" rows="4" placeholder="Paste full system log output or stacktrace..."></textarea>
+          </div>
+          <div id="modalStatusMsg" class="status-banner"></div>
+        </form>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="incidentForm" class="btn btn-primary" id="modalSubmitBtn">Submit Incident</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
