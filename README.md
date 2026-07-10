@@ -4,17 +4,6 @@ A premium, modern Spring Boot 3 platform for incident reporting, operational int
 
 ---
 
-## 📸 User Interface Screenshots
-
-### Login & Registration Portal
-This secure portal supports JWT-based authentication. Users can sign in or register a new `ENGINEER` account.
-![Login Page](screenshots/login_page.png)
-
-### Incident Management & Analytics Dashboard
-A full-featured command center displaying statistics cards, interactive graphs (severity and application fault metrics), a searchable incident registry, raw system logs, and live collaboration threads.
-![Dashboard](screenshots/dashboard.png)
-
----
 
 ## 🛠️ Technology Stack
 
